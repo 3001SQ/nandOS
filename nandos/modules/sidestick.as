@@ -4,23 +4,24 @@
 // Created by Stjepan Stamenkovic.
 // -----------------------------------------------------------------------------
 
-// nandOS
 #include "nandos/printk.h"
 #include "nandos/wait.h"
+#include "nandos/io.h"
+#include "nandos/cdev.h"
 
 // ---------------------------------------------------------
 
-class SidestickListener
+class DeviceListener
 {
 	uint inode;
 	file openFile;
 	bool bPendingData;
 
-	SidestickListener()
+	DeviceListener()
 	{
 	}
 	
-	SidestickListener(uint i, file &in f)
+	DeviceListener(uint i, file &in f)
 	{
 		inode = i;
 		openFile = f;
@@ -49,7 +50,7 @@ namespace Shared
 	vec4 axes = vec4(0, 0, 0, 0);
 	
 	// Processes that called open(), removed on release()
-	vector<SidestickListener> listeners;
+	vector<DeviceListener> listeners;
 }
 
 // ---------------------------------------------------------
@@ -93,7 +94,7 @@ int open(uint inode, file &in f)
 {
 	printk("Sidestick Open " + inode + " PID " + f.pid + "\n");
 	
-	Shared::listeners.push_back(SidestickListener(inode, f));
+	Shared::listeners.push_back(DeviceListener(inode, f));
 	
 	return 0;
 }

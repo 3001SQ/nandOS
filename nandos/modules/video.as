@@ -35,7 +35,7 @@ namespace VideoInstance
 	uint charInode = 0;
 	
 	// Displays registered in order of DisplayConnected  interrupts
-	//vector<DisplayConfiguration>
+	vector<DisplayConfiguration> displayConfigurations;
 }
 
 // ---------------------------------------------------------
@@ -69,6 +69,8 @@ void handleInterrupt(var[] &in data)
 
 		printk("VideoAdapter " + VideoInstance::deviceId + " : Display connected : " +
 			idx + " " + config.label);
+			
+		VideoInstance::displayConfigurations.push_back(config);
 	}
 	else
 	{
@@ -107,6 +109,38 @@ ssize_t write(file &in f, var[] &in data)
 	// {
 		// printk(" " + data[iData].dump());
 	// }
+	
+	// -----------------------------------------------------
+	// Special handling of bitmap mode memory objects
+	// -----------------------------------------------------
+	
+	// Rewrite bitmap text id to incorporate PID shift
+	// Each application can thereby have text labels in [0, 999] locally, while
+	// it is referenced as (localId + PID * 1000) on global device memory
+	int controlCode = int(data[0]);
+	if (controlCode == Control_Video_CreateText ||
+		controlCode == Control_Video_UpdateText ||
+		controlCode == Control_Video_DeleteText ||
+		controlCode == Control_Video_DrawText)
+	{
+		int localId = int(data[1]);
+	
+		// text id 0 is invalid for driver operations
+		if (localId == 0)
+		{
+			log("Application " + f.pid + " tried to operate on text 0!");
+			return -1;
+		}
+		
+		// Make sure that font size is converted to float if the user specifiied int
+		if (controlCode == Control_Video_DrawText &&
+			data[4].getType() == Var_Type_Integer)
+		{
+			data[4] = float(int(data[4]));
+		}
+
+		data[1] = uint64(localId + f.pid * 1000);
+	}
 	
 	outv(data);
 	

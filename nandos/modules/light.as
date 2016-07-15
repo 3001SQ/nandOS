@@ -13,7 +13,28 @@
 
 void init(uint id)
 {
-	cdev_add(id, "light");
+	// Extract device model and actual id
+	int deviceModel = id / 100;
+	int deviceId = id % 100;
+	
+	string nodeName;
+	
+	switch(deviceModel)
+	{
+		case Model_Light_Simple:
+			nodeName = "light";
+			break;
+		case Model_Light_SpacecraftWarningLight:
+			nodeName = "spacecraftWarningLight";
+			break;
+		default:
+			printk("Invalid model specified: " + id + "\n");
+			return;
+	}
+
+	printk("Initialising " + nodeName + deviceId + "\n");
+	
+	cdev_add(deviceId, nodeName);
 }
 
 void handleInterrupt(vector<var> &in data)
